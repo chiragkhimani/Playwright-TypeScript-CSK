@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test'
 
-import { LoginPage } from '../pages/LoginPage';
-import { HomePage } from '../pages/HomePage';
-import { CartPage } from '../pages/CartPage';
-import users from '../data/invalid_cred.json';
+import { LoginPage } from '../../pages/LoginPage';
+import { HomePage } from '../../pages/HomePage';
+import { CartPage } from '../../pages/CartPage';
+import users from '../../data/invalid_cred.json';
 
 test.describe('Cart Page Validation', () => {
 
@@ -26,6 +26,9 @@ test.describe('Cart Page Validation', () => {
 
     test('Verify cart icon updated when product is removed @smoke', async ({ page }) => {
         const productName = 'Sauce Labs Backpack';
+
+
+        
         const loginPage = new LoginPage(page);
         loginPage.openWebsite();
 

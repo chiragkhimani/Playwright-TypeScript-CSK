@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import token_data from '../data/create_token.json';
-import { ApiUtils } from '../utils/ApiUtils';
-import create_booking_data from '../data/create_booking.json';
+import token_data from '../../data/create_token.json';
+import { ApiUtils } from '../../utils/ApiUtils';
+import create_booking_data from '../../data/create_booking.json';
 
 test('API test Positive', async ({ request }) => {
     const apiUtils = new ApiUtils();
@@ -10,7 +10,7 @@ test('API test Positive', async ({ request }) => {
     expect(await response.json()).toHaveProperty('token');
 });
 
-test('API test Negative', async ({ request }) => {
+test('API test Negative', async ({ request, page }) => {
     const apiUtils = new ApiUtils();
     const invalid_data = structuredClone(token_data);
     invalid_data.password = 'invalid_password';
