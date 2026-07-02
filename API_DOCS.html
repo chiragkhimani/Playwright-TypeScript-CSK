@@ -1,0 +1,764 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Demo Store — REST API Documentation (v3)</title>
+  <style>
+    body {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.7;
+      color: #111827;
+      background: #f8fafc;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 2rem 2.25rem;
+      border-radius: 1.25rem;
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+    }
+    h1, h2, h3 {
+      color: #111827;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      line-height: 1.2;
+    }
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.6rem; }
+    h3 { font-size: 1.2rem; }
+    p { margin: 0.9rem 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    thead th {
+      background: #111827;
+      color: white;
+      text-align: left;
+      padding: 0.75rem 0.9rem;
+    }
+    tbody td, th {
+      border: 1px solid #e5e7eb;
+      padding: 0.75rem 0.9rem;
+      vertical-align: top;
+    }
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: #f3f4f6;
+      padding: 0.18rem 0.35rem;
+      border-radius: 0.35rem;
+      color: #111827;
+    }
+    pre {
+      background: #111827;
+      color: #f8fafc;
+      padding: 1rem;
+      overflow-x: auto;
+      border-radius: 0.85rem;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    blockquote {
+      border-left: 4px solid #2563eb;
+      padding-left: 1rem;
+      color: #1f2937;
+      margin: 1.25rem 0;
+      background: #eff6ff;
+      border-radius: 0.75rem;
+    }
+    .note {
+      font-size: 0.95rem;
+      color: #374151;
+      margin: 1rem 0;
+    }
+    .interactive-title {
+      color: #2563eb;
+      cursor: pointer;
+    }
+    .interactive-title:hover {
+      text-decoration: underline;
+    }
+    .collapsible {
+      border-left: 4px solid #86c2ff;
+      background: #eff6ff;
+      padding: 1rem 1rem 1rem 1.25rem;
+      margin: 1rem 0 1.25rem;
+      border-radius: 0.75rem;
+    }
+    .hidden {
+      display: none;
+    }
+    ul, ol {
+      margin: 0.75rem 0 0.75rem 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QA Demo Store — REST API Documentation (v3)</h1>
+    <p><strong>Base URL</strong></p>
+    <table>
+      <thead>
+        <tr><th>Environment</th><th>Base URL</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Hostinger (prod)</td><td><code>https://&lt;your-domain&gt;/api</code></td></tr>
+        <tr><td>Emergent preview</td><td><code>${REACT_APP_BACKEND_URL}/api</code> (FastAPI mirror)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Conventions</strong></p>
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Content type</td><td><code>application/json; charset=utf-8</code> (request + response)</td></tr>
+        <tr><td>Auth scheme</td><td><code>Authorization: Bearer &lt;token&gt;</code> (opaque, 64 hex chars, 24 h TTL)</td></tr>
+        <tr><td>Date/time</td><td>ISO-8601 (UTC) for FastAPI; <code>YYYY-MM-DD HH:MM:SS</code> (UTC) for PHP</td></tr>
+        <tr><td>Money</td><td>JSON <code>number</code>, 2 decimal places</td></tr>
+        <tr><td>Error envelope</td><td><code>{ "error": "&lt;message&gt;", "detail": "&lt;message&gt;" }</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>HTTP status codes used</strong></p>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>200</td><td>OK — request succeeded</td></tr>
+        <tr><td>201</td><td>Created — new resource (signup, order)</td></tr>
+        <tr><td>400</td><td>Bad request — validation, duplicates, malformed payload</td></tr>
+        <tr><td>401</td><td>Unauthorized — missing / invalid / expired Bearer token</td></tr>
+        <tr><td>403</td><td>Forbidden — account locked</td></tr>
+        <tr><td>404</td><td>Not found — product id, route</td></tr>
+        <tr><td>405</td><td>Method not allowed</td></tr>
+        <tr><td>500</td><td>Internal server error — DB failure or unexpected</td></tr>
+      </tbody>
+    </table>
+
+    <hr>
+    <h2>1. Public endpoints</h2>
+
+    <h3>1.1 <code>POST /api/signup</code></h3>
+    <p>Create a new user account.</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>None</strong> (public)</td></tr>
+        <tr><td>Method</td><td><code>POST</code></td></tr>
+        <tr><td>Request body</td><td>JSON</td></tr>
+        <tr><td>Success code</td><td><code>201 Created</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Request body</strong></p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Type</th><th>Rules</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>username</code></td><td>string</td><td>3–60 chars, regex <code>^[A-Za-z0-9_.-]+$</code></td></tr>
+        <tr><td><code>email</code></td><td>string</td><td>must match <code>^[^@\s]+@[^@\s]+\.[^@\s]+$</code> (PHP also runs <code>FILTER_VALIDATE_EMAIL</code>)</td></tr>
+        <tr><td><code>password</code></td><td>string</td><td>minimum 6 characters</td></tr>
+      </tbody>
+    </table>
+
+    <pre>{
+  "username": "alice",
+  "email": "alice@example.com",
+  "password": "hunter22"
+}</pre>
+
+    <p><strong>Success response — <code>201</code></strong></p>
+    <pre>{
+  "success": true,
+  "message": "Account created successfully",
+  "user": {
+    "id": 4,
+    "username": "alice",
+    "email": "alice@example.com",
+    "first_name": "alice",
+    "last_name": "",
+    "locked": false,
+    "created_at": "2026-02-28T07:30:11+00:00"
+  }
+}</pre>
+
+    <p><strong>Error responses</strong></p>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>400</td><td>missing field, invalid email, password &lt; 6 chars, invalid username chars</td></tr>
+        <tr><td>400</td><td><code>username</code> or <code>email</code> already exists ("Username or email is already taken")</td></tr>
+        <tr><td>405</td><td>non-POST method</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>curl</strong></p>
+    <pre>curl -X POST https://&lt;host&gt;/api/signup \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","email":"alice@example.com","password":"hunter22"}'</pre>
+
+    <hr>
+    <h3>1.2 <code>POST /api/auth/login</code></h3>
+    <p>Exchange username + password for a Bearer token.</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>None</strong> (public)</td></tr>
+        <tr><td>Method</td><td><code>POST</code></td></tr>
+        <tr><td>Request body</td><td>JSON</td></tr>
+        <tr><td>Success code</td><td><code>200 OK</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Request body</strong></p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>username</code></td><td>string</td><td>required</td></tr>
+        <tr><td><code>password</code></td><td>string</td><td>required, bcrypt-verified</td></tr>
+      </tbody>
+    </table>
+
+    <pre>{ "username": "standard_user", "password": "secret_sauce" }</pre>
+
+    <p><strong>Success response — <code>200</code></strong></p>
+    <pre>{
+  "token": "8b3f…&lt;64 hex chars&gt;",
+  "expires_at": "2026-03-01 06:58:15",
+  "user": {
+    "id": 1,
+    "username": "standard_user",
+    "email": "standard@demo.test",
+    "first_name": "Standard",
+    "last_name": "User",
+    "locked": false,
+    "created_at": "2026-02-28T06:30:00+00:00"
+  }
+}</pre>
+
+    <blockquote>Token is opaque (64 hex chars), stored server-side in <code>auth_tokens</code> with a 24-hour expiry, and revoked on first access after it has expired.</blockquote>
+
+    <p><strong>Error responses</strong></p>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>400</td><td>missing <code>username</code> or <code>password</code></td></tr>
+        <tr><td>401</td><td>wrong credentials — "Username and password do not match any user…"</td></tr>
+        <tr><td>403</td><td>account is locked — "Sorry, this user has been locked out."</td></tr>
+        <tr><td>405</td><td>non-POST method</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>curl</strong></p>
+    <pre>curl -X POST https://&lt;host&gt;/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"standard_user","password":"secret_sauce"}'</pre>
+
+    <hr>
+    <h3>1.3 <code>GET /api/products</code></h3>
+    <p>List all products (catalog).</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>None</strong></td></tr>
+        <tr><td>Method</td><td><code>GET</code></td></tr>
+        <tr><td>Success code</td><td><code>200 OK</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Query parameters</strong> — none.</p>
+
+    <p><strong>Success response — <code>200</code></strong></p>
+    <pre>{
+  "products": [
+    {
+      "id": 1,
+      "name": "Sauce Labs Backpack",
+      "description": "Carry.allTheThings() …",
+      "price": 29.99,
+      "image_url": "https://images.unsplash.com/photo-…",
+      "category": "Bags",
+      "stock": 25
+    },
+    …
+  ]
+}</pre>
+
+    <p><strong>curl</strong></p>
+    <pre>curl https://&lt;host&gt;/api/products</pre>
+
+    <hr>
+    <h3 class="interactive-title" onclick="toggleSection('product-detail')">1.4 <code>GET /api/products?id={id}</code></h3>
+    <div id="product-detail" class="collapsible hidden">
+      <p><strong>Interactive tip:</strong> click the title again to hide this note. Use the <code>id</code> query parameter to fetch a specific product from the public catalog.</p>
+    </div>
+    <p>Retrieve a single product.</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>None</strong></td></tr>
+        <tr><td>Method</td><td><code>GET</code></td></tr>
+        <tr><td>Success code</td><td><code>200 OK</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Query parameter</strong></p>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>integer</td><td>yes</td><td>product primary key</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Success response — <code>200</code></strong></p>
+    <pre>{
+  "product": {
+    "id": 1,
+    "name": "Sauce Labs Backpack",
+    "description": "…",
+    "price": 29.99,
+    "image_url": "…",
+    "category": "Bags",
+    "stock": 25
+  }
+}</pre>
+
+    <p><strong>Error responses</strong></p>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>400</td><td>non-numeric <code>id</code> (PHP returns 400)</td></tr>
+        <tr><td>404</td><td>product not found</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>curl</strong></p>
+    <pre>curl https://&lt;host&gt;/api/products?id=1</pre>
+
+    <hr>
+    <h2>2. Protected endpoints</h2>
+    <blockquote>
+      All endpoints in this section require the header:
+      <pre>Authorization: Bearer &lt;token&gt;</pre>
+      Obtain a token from <code>POST /api/auth/login</code>. Missing / invalid / expired token always returns <code>401</code>.
+    </blockquote>
+
+    <h3>2.1 <code>GET /api/profile</code></h3>
+    <p>Return the currently-authenticated user.</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>Bearer</strong></td></tr>
+        <tr><td>Method</td><td><code>GET</code></td></tr>
+        <tr><td>Success code</td><td><code>200 OK</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Success response — <code>200</code></strong></p>
+    <pre>{
+  "user": {
+    "id": 1,
+    "username": "standard_user",
+    "email": "standard@demo.test",
+    "first_name": "Standard",
+    "last_name": "User",
+    "locked": false,
+    "created_at": "2026-02-28T06:30:00+00:00"
+  }
+}</pre>
+
+    <p><strong>Error responses</strong></p>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>401</td><td>missing / invalid / expired token</td></tr>
+        <tr><td>403</td><td>user is locked</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>curl</strong></p>
+    <pre>curl -H "Authorization: Bearer $TOKEN" https://&lt;host&gt;/api/profile</pre>
+
+    <hr>
+    <h3>2.2 <code>GET /api/orders</code></h3>
+    <p>List orders belonging to <strong>the authenticated user</strong>, newest first.</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>Bearer</strong></td></tr>
+        <tr><td>Method</td><td><code>GET</code></td></tr>
+        <tr><td>Success code</td><td><code>200 OK</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Success response — <code>200</code></strong></p>
+    <pre>{
+  "orders": [
+    {
+      "id": 12,
+      "user_id": 1,
+      "full_name": "Alice Smith",
+      "address": "123 Main",
+      "city": "Mumbai",
+      "state": "MH",
+      "pincode": "400001",
+      "phone": "+91 9876543210",
+      "total": 69.97,
+      "created_at": "2026-02-28T07:42:11+00:00",
+      "items": [
+        { "product_id": 1, "name": "Sauce Labs Backpack",   "price": 29.99, "quantity": 1 },
+        { "product_id": 3, "name": "Sauce Labs Bolt T-Shirt", "price": 15.99, "quantity": 2 }
+      ]
+    }
+  ]
+}</pre>
+
+    <p>If the user has no orders, returns <code>{"orders": []}</code>.</p>
+
+    <p><strong>Error responses</strong></p>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>401</td><td>missing / invalid / expired token</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>curl</strong></p>
+    <pre>curl -H "Authorization: Bearer $TOKEN" https://&lt;host&gt;/api/orders</pre>
+
+    <hr>
+    <h3>2.3 <code>GET /api/orders?user_id={id}</code></h3>
+    <p>List orders for a specific user (admin / cross-user view).</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>Bearer</strong></td></tr>
+        <tr><td>Method</td><td><code>GET</code></td></tr>
+        <tr><td>Success code</td><td><code>200 OK</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Query parameter</strong></p>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>user_id</code></td><td>integer</td><td>yes</td><td>if omitted, behaves like §2.2 (returns the caller's orders)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Same response shape as §2.2.</p>
+
+    <p><strong>curl</strong></p>
+    <pre>curl -H "Authorization: Bearer $TOKEN" "https://&lt;host&gt;/api/orders?user_id=1"</pre>
+
+    <hr>
+    <h3>2.4 <code>POST /api/orders</code></h3>
+    <p>Create a new order for the authenticated user.</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Auth</td><td><strong>Bearer</strong></td></tr>
+        <tr><td>Method</td><td><code>POST</code></td></tr>
+        <tr><td>Request body</td><td>JSON</td></tr>
+        <tr><td>Success code</td><td><code>201 Created</code></td></tr>
+        <tr><td>Side effects</td><td><strong>total</strong> is always re-computed server-side from <code>products.price</code> — client-supplied price/total fields are ignored.</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Request body</strong></p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Type</th><th>Rules</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>full_name</code></td><td>string</td><td>2–120 chars</td></tr>
+        <tr><td><code>address</code></td><td>string</td><td>2–255 chars</td></tr>
+        <tr><td><code>city</code></td><td>string</td><td>1–80 chars</td></tr>
+        <tr><td><code>state</code></td><td>string</td><td>1–80 chars</td></tr>
+        <tr><td><code>pincode</code></td><td>string</td><td>3–20 chars</td></tr>
+        <tr><td><code>phone</code></td><td>string</td><td>regex <code>^[+\d][\d\s\-()]{5,19}$</code> (e.g. <code>+91 9876543210</code>)</td></tr>
+        <tr><td><code>items</code></td><td>array</td><td>at least 1; each item: <code>{ "product_id": int, "quantity": int &ge; 1 }</code></td></tr>
+      </tbody>
+    </table>
+
+    <pre>{
+  "full_name": "Alice Smith",
+  "address": "123 Main",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pincode": "400001",
+  "phone": "+91 9876543210",
+  "items": [
+    { "product_id": 1, "quantity": 1 },
+    { "product_id": 3, "quantity": 2 }
+  ]
+}</pre>
+
+    <p><strong>Success response — <code>201</code></strong></p>
+    <pre>{ "success": true, "order_id": 13, "total": 61.97 }</pre>
+
+    <p><strong>Error responses</strong></p>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>400</td><td>any shipping field missing/empty</td></tr>
+        <tr><td>400</td><td>invalid phone (regex mismatch)</td></tr>
+        <tr><td>400</td><td><code>items</code> missing or empty</td></tr>
+        <tr><td>400</td><td>unknown <code>product_id</code> (returns "Unknown product id N")</td></tr>
+        <tr><td>401</td><td>missing / invalid / expired token</td></tr>
+        <tr><td>500</td><td>DB transaction failure (rolled back, no partial order persisted)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>curl</strong></p>
+    <pre>curl -X POST https://&lt;host&gt;/api/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "full_name":"Alice Smith","address":"123 Main","city":"Mumbai",
+    "state":"Maharashtra","pincode":"400001","phone":"+91 9876543210",
+    "items":[{"product_id":1,"quantity":1},{"product_id":3,"quantity":2}]
+  }'</pre>
+
+    <hr>
+    <h2>3. Authentication details</h2>
+
+    <h3>3.1 Token issuance</h3>
+    <ol>
+      <li>Client sends credentials to <code>POST /api/auth/login</code>.</li>
+      <li>Backend looks up the user by <code>username</code>, verifies <code>password</code> against <code>password_hash</code> using bcrypt (<code>password_verify</code> / <code>bcrypt.checkpw</code>).</li>
+      <li>On success, backend generates <code>token = bin2hex(random_bytes(32))</code> (PHP) / <code>secrets.token_hex(32)</code> (FastAPI), stores it in <code>auth_tokens(user_id, token, expires_at, created_at)</code> with <code>expires_at = NOW() + 24h</code>, and returns it to the client.</li>
+      <li>Client stores the token in localStorage (key <code>qa_demo_token</code>).</li>
+      <li>The React axios interceptor automatically sets <code>Authorization: Bearer &lt;token&gt;</code> on every subsequent request.</li>
+    </ol>
+
+    <h3>3.2 Token validation</h3>
+    <ol>
+      <li>Server reads the <code>Authorization</code> header (PHP also checks <code>HTTP_AUTHORIZATION</code> / <code>REDIRECT_HTTP_AUTHORIZATION</code> for CGI/FPM compatibility).</li>
+      <li>Strips the <code>Bearer </code> prefix.</li>
+      <li>Looks up the token in <code>auth_tokens</code> joined with <code>users</code>.</li>
+      <li>If not found → <code>401 Invalid token</code>.</li>
+      <li>If <code>expires_at &lt; NOW()</code> → delete the row and return <code>401 Token expired</code>.</li>
+      <li>If user is <code>locked</code> → <code>403</code>.</li>
+      <li>Otherwise the request handler receives the authenticated user object.</li>
+    </ol>
+
+    <h3>3.3 Token lifecycle</h3>
+    <table>
+      <thead>
+        <tr><th>Event</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Login</td><td>Inserts a new row in <code>auth_tokens</code>; multiple concurrent tokens per user are allowed.</td></tr>
+        <tr><td>Expiry</td><td>First use after <code>expires_at</code> deletes the row and returns 401.</td></tr>
+        <tr><td>Logout</td><td>Client-side only — token is removed from localStorage. Server-side row is left to expire naturally (a TTL cleanup is on the P2 backlog).</td></tr>
+        <tr><td>User deletion</td><td><code>ON DELETE CASCADE</code> removes the user's tokens.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3.4 Public vs protected matrix</h3>
+    <table>
+      <thead>
+        <tr><th>Endpoint</th><th>Auth</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>POST /api/signup</code></td><td>Public</td></tr>
+        <tr><td><code>POST /api/auth/login</code></td><td>Public</td></tr>
+        <tr><td><code>GET /api/products</code></td><td>Public</td></tr>
+        <tr><td><code>GET /api/products?id=N</code></td><td>Public</td></tr>
+        <tr><td><code>GET /api/profile</code></td><td>Bearer</td></tr>
+        <tr><td><code>GET /api/orders</code></td><td>Bearer</td></tr>
+        <tr><td><code>GET /api/orders?user_id=N</code></td><td>Bearer</td></tr>
+        <tr><td><code>POST /api/orders</code></td><td>Bearer</td></tr>
+      </tbody>
+    </table>
+
+    <hr>
+    <h2>4. Data models</h2>
+
+    <h3>4.1 <code>User</code></h3>
+    <pre>{
+{
+  "id": number,   // auto-increment
+  "username": string,   // unique, 3–60 chars, [A-Za-z0-9_.-]
+  "email": string,   // unique
+  "first_name": string,
+  "last_name": string,
+  "locked": boolean,
+  "created_at": string,   // ISO-8601 / Y-m-d H:i:s
+  // password_hash is NEVER returned
+}
+}</pre>
+
+    <h3>4.2 <code>Product</code></h3>
+    <pre>{
+{
+  "id": number,
+  "name": string,
+  "description": string,
+  "price": number,   // 2dp
+  "image_url": string,
+  "category": string,
+  "stock": number,
+}
+}</pre>
+
+    <h3>4.3 <code>OrderItem</code></h3>
+    <pre>{
+{
+  "product_id": number,
+  "name": string,   // snapshot of product name at purchase time
+  "price": number,   // snapshot of product price at purchase time (server-derived)
+  "quantity": number,
+}
+}</pre>
+
+    <h3>4.4 <code>Order</code></h3>
+    <pre>{
+{
+  "id": number,
+  "user_id": number | null,
+  "full_name": string,
+  "address": string,
+  "city": string,
+  "state": string,
+  "pincode": string,
+  "phone": string,
+  "total": number,        // server-recomputed = Σ items[i].price × items[i].quantity
+  "created_at": string,
+  "items": OrderItem[],   // present in GET responses
+}
+}</pre>
+
+    <h3>4.5 <code>AuthToken</code> (server-side only — never returned in full)</h3>
+    <pre>{
+{
+  "id": number,
+  "user_id": number,
+  "token": string,        // 64 hex chars
+  "expires_at": string,        // Y-m-d H:i:s, NOW() + 24h
+  "created_at": string,
+}
+}</pre>
+
+    <hr>
+    <h2>5. Error envelope</h2>
+    <p>Every non-2xx response shares this shape:</p>
+    <pre>{ "error": "&lt;human-readable message&gt;", "detail": "&lt;same message&gt;" }</pre>
+    <p class="note"><strong>Note:</strong> <code>detail</code> is kept for clients (the React frontend reads <code>err.response.data.detail</code>); <code>error</code> is kept for parity with common PHP conventions.</p>
+
+    <hr>
+    <h2>6. CORS</h2>
+    <p>The PHP backend (in <code>api/db.php</code>) sets:</p>
+    <pre>Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization</pre>
+    <p>Preflight <code>OPTIONS</code> requests return <code>204</code> immediately. For production, tighten <code>Allow-Origin</code> to your exact frontend domain.</p>
+
+    <hr>
+    <h2>7. Test users (seeded)</h2>
+    <p>All seeded passwords: <code>secret_sauce</code> (bcrypt-hashed in DB).</p>
+    <table>
+      <thead>
+        <tr><th>Username</th><th>Email</th><th>Behavior</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>standard_user</code></td><td>standard@demo.test</td><td>Happy path</td></tr>
+        <tr><td><code>locked_out_user</code></td><td>locked@demo.test</td><td>Login returns 403</td></tr>
+        <tr><td><code>problem_user</code></td><td>problem@demo.test</td><td>Happy path</td></tr>
+      </tbody>
+    </table>
+
+    <hr>
+    <h2>8. End-to-end example</h2>
+    <pre># 1) Sign up (or skip this and use a seeded user)
+curl -s -X POST https://&lt;host&gt;/api/signup \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","email":"alice@example.com","password":"hunter22"}'
+
+# 2) Log in to get a token
+TOKEN=$(curl -s -X POST https://&lt;host&gt;/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"hunter22"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+
+# 3) Browse products (public)
+curl -s https://&lt;host&gt;/api/products
+
+# 4) Place an order
+curl -s -X POST https://&lt;host&gt;/api/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "full_name":"Alice Smith","address":"123 Main","city":"Mumbai",
+    "state":"Maharashtra","pincode":"400001","phone":"+91 9876543210",
+    "items":[{"product_id":1,"quantity":1}]
+  }'
+
+# 5) See my orders
+curl -s -H "Authorization: Bearer $TOKEN" https://&lt;host&gt;/api/orders
+
+# 6) Who am I
+curl -s -H "Authorization: Bearer $TOKEN" https://&lt;host&gt;/api/profile</pre>
+
+    <p><em>Last updated: 2026-02-28 — v3.</em></p>
+  </div>
+  <script>
+    function toggleSection(id) {
+      var section = document.getElementById(id);
+      if (!section) return;
+      section.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>
